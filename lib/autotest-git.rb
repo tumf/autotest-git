@@ -8,6 +8,7 @@ class AutotestGit < Autotest
     git = Git.open(".")
     sha = git.object("HEAD").sha
     puts sha
+
     return false if sha == @sha
     @sha = sha
     true
