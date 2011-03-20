@@ -11,27 +11,27 @@ class AutotestGit < Autotest
     @sha = sha
     true
   end
+
   def find_files_to_test files = find_files
     return nil unless git_update?
-
-    updated = files.select { |filename, mtime| self.last_mtime < mtime }
-
-    # nothing to update or initially run
-    unless updated.empty? || self.last_mtime.to_i == 0 then
-      p updated if options[:verbose]
-
-      hook :updated, updated
-    end
-
-    updated.map { |f,m| test_files_for f }.flatten.uniq.each do |filename|
-      self.files_to_test[filename] # creates key with default value
-    end
-
-    if updated.empty? then
-      nil
-    else
-      files.values.max
-    end
+    super files
   end
 
+  def self.runner
+    style = options[:style] || AutotestGit.autodiscover
+    target = AutotestGit
+
+    unless style.empty? then
+      mod = "autotest/#{style.join "_"}"
+      puts "loading #{mod}"
+      begin
+        require mod
+      rescue LoadError
+        abort "AutotestGit style #{mod} doesn't seem to exist. Aborting."
+      end
+      target = AutotestGit.const_get(style.map {|s| s.capitalize}.join)
+    end
+
+    target
+  end
 end
