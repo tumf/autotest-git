@@ -1,6 +1,7 @@
 = autotest-git
 
-Description goes here.
+    gem install autotest-git
+
 
 == Contributing to autotest-git
  
