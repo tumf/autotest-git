@@ -14,6 +14,7 @@ class AutotestGit < Autotest
 
   def find_files_to_test files = find_files
     return nil unless git_update?
+    puts "hoge"
     super files
   end
 
