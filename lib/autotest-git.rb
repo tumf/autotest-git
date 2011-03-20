@@ -4,6 +4,7 @@ require "autotest"
 require "git"
 
 class AutotestGit < Autotest
+
   def git_update?
     git = Git.open(".")
     sha = git.object("HEAD").sha
@@ -12,28 +13,50 @@ class AutotestGit < Autotest
     true
   end
 
-  def find_files_to_test files = find_files
-    return nil unless git_update?
-    puts "updated"
+  def run_tests
+    hook :run_command
+    new_mtime = self.find_files_to_test
+    return unless new_mtime
+    self.last_mtime = new_mtime
 
-    super files
-  end
+    cmd = self.make_test_cmd self.files_to_test
+    return if cmd.empty?
 
-  def self.runner
-    style = options[:style] || AutotestGit.autodiscover
-    target = AutotestGit
+    # check if commited
+    return unless git_update? 
 
-    unless style.empty? then
-      mod = "autotest/#{style.join "_"}"
-      puts "loading #{mod}"
-      begin
-        require mod
-      rescue LoadError
-        abort "AutotestGit style #{mod} doesn't seem to exist. Aborting."
+    puts cmd unless options[:quiet]
+
+    old_sync = $stdout.sync
+    $stdout.sync = true
+    self.results = []
+    line = []
+    begin
+      open "| #{cmd}", "r" do |f|
+        until f.eof? do
+          c = f.getc or break
+          if RUBY19 then
+            print c
+          else
+            putc c
+          end
+          line << c
+          if c == ?\n then
+            self.results << if RUBY19 then
+                              line.join
+                            else
+                              line.pack "c*"
+                            end
+            line.clear
+          end
+        end
       end
-      target = AutotestGit.const_get(style.map {|s| s.capitalize}.join)
+    ensure
+      $stdout.sync = old_sync
     end
+    hook :ran_command
+    self.results = self.results.join
 
-    target
+    handle_results self.results
   end
 end

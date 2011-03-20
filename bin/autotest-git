@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 $:.unshift(File.join(File.dirname(__FILE__), '..','lib'))
 require 'autotest-git'
-
 AutotestGit.parse_options
-AutotestGit.runner.run
+AutotestGit.run

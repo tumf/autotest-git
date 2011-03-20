@@ -1,0 +1,32 @@
+# -*- coding: utf-8 -*-
+# -*- ruby -*-
+
+require 'redgreen/autotest'
+
+module Autotest::Growl
+  def self.growl title, msg, img="~/.rails_ok.png", pri=0, sticky=""
+    msg += " at #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
+    # autotestは使わないので、-nで指定するアプリケーション名はautospecで良いと思う
+    # -Hで通知先のGrowlのあるホスト名を指定する
+    system "growlnotify -n autotest -p #{pri} -m #{msg.inspect} --image #{img} #{title} #{sticky}"
+    #system "growlnotify -n autospec -H localhost --image #{img} -p #{pri} -m #{msg.inspect} #{title} #{sticky}"
+  end
+
+  Autotest.add_hook :ran_command do |at|
+    results = at.results.last
+    examples = results[/(\d+)\s+tests?/].to_i  # テストの総数
+    failures = results[/(\d+)\s+failures?/].to_i  # 失敗の数
+    errors = results[/(\d+)\s+errors?/].to_i # エラーの数
+    if examples >= 1
+      if failures > 0 || errors > 0
+        growl "Tests Failed", "#{examples} examples, #{failures} failures, and #{errors} errors", "~/.rails_fail.png", 2
+      else
+        growl "Tests Passed", "#{examples} examples, #{failures} failures, and #{errors} errors", "~/.rails_ok.png", 0
+      end
+    else
+      growl "Tests Errored", "errors", "~/.rails_fail.png", 2
+    end
+  end
+end
+
+
